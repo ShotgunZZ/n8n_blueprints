@@ -1,0 +1,479 @@
+{
+  "name": "YouTube Video AI Content Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro-preview-03-25",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro-preview-03-25"
+        },
+        "text": "=## 🎯 Role & Goal\n\nYou are an expert YouTube Content Strategist and SEO specialist. Your primary task is to analyze the provided video content and generate a single, complete JSON object containing a compelling title and a detailed, SEO-optimized description.\n\nAssume the video has no existing title or description.\n\n-----\n\n## 📜 Critical Instructions\n\n1.  **Analyze the Video Content**: I will provide the content or transcript of a video. Digest it thoroughly to understand its topic, purpose, key moments, and target audience.\n\n2.  **Adhere to Style Guide**: I will also provide a table containing specific writing style guidelines. You **MUST** follow this style for both the title and the description.\n\n3.  **Generate JSON Output**: Your entire response **MUST** be a single, valid JSON object. This object will contain exactly two keys, using the **strict wording** below:\n\n    ```json\n    {\n      \"Title of the video\": \"...\",\n      \"Description of the video\": \"...\"\n    }\n    ```\n\n-----\n\n## ✍️ Generation Rules\n\n### Title Rules (`Title of the video`)\n\n  * Create a catchy, engaging, and SEO-friendly title that accurately reflects the video content.\n  * Keep it concise, ideally under 70 characters.\n  * Incorporate the most important keywords naturally.\n\n### Description Rules (`Description of the video`)\n\n  * **Hook**: Start with a compelling 2-3 sentence paragraph that summarizes the video's value and hooks the viewer.\n  * **Timestamps**: Generate and insert relevant timestamps for key sections of the video. (e.g., `00:00 - Introduction`, `02:15 - Core Concept`, etc.).\n  * **Mandatory Information Sections**: You **MUST** include the following sections within the description:\n      * `Tools Used in This Video:`\n      * `Who This Is For:`\n      * `➡️ Download Blueprints/Templates Here: [INSERT LINK HERE]` (Use this exact text as a placeholder).\n  * **Mandatory Call-to-Actions (CTA)**: After the main description content and before the hashtags, you **MUST** include these two lines exactly as written:\n    ```\n    ---\n    Check out my portfolio: https://www.shaunz.net\n\n    As an official OpenAI Service Partner, we help businesses leverage AI. Schedule a free consultation with us: https://www.think-technologies.com/openai-smb#bookus\n    ```\n  * **Hashtags**: Conclude the entire description with 3-5 relevant hashtags (e.g., `#AI #Automation #n8n`).\n\n-----\n\n## 📝 Input for Analysis\n\n**previous example table:**\n\n> `{{ $json.data }}`\n\nNow, generate the JSON object based on all the instructions above.",
+        "videoUrls": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        272
+      ],
+      "id": "468e213c-982c-4cb8-b9f0-6d22e80136ef",
+      "name": "Analyze video",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "urjt60nj3WV6QUb5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract the JSON string from Gemini response and parse it\nconst text = items[0].json.content.parts[0].text;\n// Extract JSON from markdown code block\nconst jsonMatch = text.match(/```json\\n([\\s\\S]*?)\\n```/);\nif (jsonMatch) {\n  const jsonArray = JSON.parse(jsonMatch[1]);\n  // Check if it's an array\n  if (Array.isArray(jsonArray)) {\n    // Combine both items into a single object\n    const result = {};\n    jsonArray.forEach(item => {\n      Object.assign(result, item);\n    });\n    return [{ json: result }];\n  } else {\n    // If it's already an object, return as is\n    return [{ json: jsonArray }];\n  }\n} else {\n  throw new Error('No JSON found in response');\n}"
+      },
+      "id": "parse_json",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y",
+          "mode": "list",
+          "cachedResultName": "Video description and title and thumbnail",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $('Parse JSON').item.json['Title of the video'] }}",
+            "Description": "={{ $('Parse JSON').item.json['Description of the video'] }}",
+            "Video URL": "={{ $('When chat message received').item.json.chatInput }}"
+          },
+          "matchingColumns": [
+            "Video URL"
+          ],
+          "schema": [
+            {
+              "id": "Video URL",
+              "displayName": "Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Thumbnail",
+              "displayName": "Thumbnail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2224,
+        176
+      ],
+      "id": "7e59e905-9c95-4e83-aa74-ff4a6372e129",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lS7ovggnt34uxICh",
+          "name": "zealotrobert gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        272
+      ],
+      "id": "69b56c9e-beae-4e59-988a-bb19eaa010df",
+      "name": "When chat message received",
+      "webhookId": "0d7b4a26-b59b-4fa7-89d4-da62c799ae8a"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "gpt-image-1",
+        "prompt": "=based on the description and title of this video, generate a thumbnail and wows people.\n description: {{ $('Parse JSON').item.json['Description of the video'] }}\n title: {{ $('Parse JSON').item.json['Title of the video'] }}\n\n**make sure all texts in the image are generated within canvas, not going outside of the image border**\n\nhere is the reference thumbnail generated from before and you should mimic the style to keep consistant:\n{{ $json.choices[0].message.content }}\n",
+        "options": {
+          "quality": "medium",
+          "size": "1536x1024"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2000,
+        272
+      ],
+      "id": "871e7068-69f0-4536-8a03-a7b9ee176678",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "LuuJapHO7ED0j94T",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "binaryPropertyName": "=data",
+        "options": {
+          "channelId": "C09HJKNQ9B3"
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2224,
+        368
+      ],
+      "id": "9ce7fadb-925f-4d04-bdf6-df0b1355edde",
+      "name": "Upload a file",
+      "webhookId": "a47ec2f9-7675-4fb3-9d27-d4ef4e0c201b",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "b59NMAggv2UM1IDv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "Job done!",
+        "waitUserReply": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        272
+      ],
+      "id": "1cdf6cc8-15c9-4ed8-90d6-1a5c1ca9d8ae",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "wait_for_both",
+      "name": "Wait for Both",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2448,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y",
+          "mode": "list",
+          "cachedResultName": "Video description and title and thumbnail",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1amfwW-LDcikJLWsBCu5s5Sf7d5qFAA0MY22_Zx7rH5Y/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        272
+      ],
+      "id": "fe511bfe-44dc-4464-966f-0a88d52b2dfe",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lS7ovggnt34uxICh",
+          "name": "zealotrobert gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        880,
+        272
+      ],
+      "id": "35b86169-c8f0-46b8-b8be-23320bb24f39",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1UvZEjIJQwPhWIMC2s5VFGm78aBMSLoX9",
+          "mode": "list",
+          "cachedResultName": "RAG thumbnail.jpg",
+          "cachedResultUrl": "https://drive.google.com/file/d/1UvZEjIJQwPhWIMC2s5VFGm78aBMSLoX9/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1552,
+        272
+      ],
+      "id": "10f7fabf-3125-436b-bf9a-fa96e3b70dcf",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "p0xGlQMEgcoMzTdI",
+          "name": "AI Collective"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "Describe the artistic style, color palette, composition, typography, and overall mood of this image in a concise paragraph. I want to use this description to generate a new, consistent thumbnail",
+        "inputType": "base64",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1776,
+        272
+      ],
+      "id": "3da21b64-c898-4caa-b623-65e65acd0c4f",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "LuuJapHO7ED0j94T",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait for Both",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        [
+          {
+            "node": "Wait for Both",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait for Both": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "versionId": "f2a9b3b2-ea8d-444b-a491-608ff807761d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3942372c35074bf3dbf43dab2a9fdaa4728a40b8c152edc062edd507c7c44031"
+  },
+  "id": "gvQdnez3scmfxqSx",
+  "tags": []
+}
