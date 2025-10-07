@@ -1,0 +1,464 @@
+{
+  "name": "TT CRM",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Monday-update",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        224
+      ],
+      "id": "91702bbe-aaf8-43ec-b18a-3b54035f3710",
+      "name": "Webhook",
+      "webhookId": "eeacc434-5b3c-4b92-8c17-be30ecb5ef32"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c324c627-bdd9-472e-a10a-405d7df8c293",
+              "name": "body.event.pulseId",
+              "value": "={{ $json.body.event.pulseId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        224
+      ],
+      "id": "f1823459-30f4-4c28-9a3b-0d90b3c28372",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        448
+      ],
+      "id": "6e5dca7c-e783-4a73-958a-13d45c61ca37",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "luG0kyj6GjS0bMIc",
+          "name": "Think Tech Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "49fb01a0-19a4-4359-aaa6-e7f1d08b6d39",
+              "leftValue": "szhang1@me.com;sxy@gmail.com;good@bad.com;zealotrobert@gmail.com;whatever",
+              "rightValue": "={{ $json.from.value[0].address }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        448
+      ],
+      "id": "03e98eeb-9b49-4c32-a787-7f615e64e02e",
+      "name": "Filter",
+      "retryOnFail": false,
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "getByColumnValue",
+        "boardId": "9791001940",
+        "columnId": "email_mktqrk7e",
+        "columnValue": "={{ $json.from.value[0].address }}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        448,
+        448
+      ],
+      "id": "3980140b-8814-4d16-a63f-857427124f4e",
+      "name": "Get Item ID by email address",
+      "credentials": {
+        "mondayComApi": {
+          "id": "Tblxq2vCmQvC7WWQ",
+          "name": "Monday.com account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "changeColumnValue",
+        "boardId": "9791001940",
+        "itemId": "={{ $('Get Item ID by email address').item.json.id }}",
+        "columnId": "text_mkw94gwn",
+        "value": "=\"{{ $('Gmail Trigger').item.json.text.replace(/[\\r\\n]+/g, ' ').replace(/[^\\x00-\\x7F]/g, '').trim() }}\""
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        912,
+        448
+      ],
+      "id": "e73b8360-d555-4735-a192-ef9e814bd2af",
+      "name": "Update email content",
+      "credentials": {
+        "mondayComApi": {
+          "id": "Tblxq2vCmQvC7WWQ",
+          "name": "Monday.com account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get email ID').item.json.column_values[3].text }}",
+        "subject": "this is a testing outreach email ",
+        "message": "={{ $('Generate email').item.json.message.content }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        224
+      ],
+      "id": "5e356fb5-095a-446f-8328-9899379fdcf7",
+      "name": "Send out email to prospect",
+      "webhookId": "9867c506-39ad-40f7-b38d-8005c53db27b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "luG0kyj6GjS0bMIc",
+          "name": "Think Tech Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C09HJKNQ9B3",
+          "mode": "list",
+          "cachedResultName": "shauns-ai-playground"
+        },
+        "message": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1024,
+        224
+      ],
+      "id": "4877b66d-c205-4414-88db-426bac835e97",
+      "name": "approve email",
+      "webhookId": "2406a1b7-7be9-4f37-bc0a-81544c4a538d",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "b59NMAggv2UM1IDv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5-NANO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "generate a cool email to Sam altman less than 100 words, just the body, no need subject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        672,
+        224
+      ],
+      "id": "2179f4c6-db0b-49e1-988d-970964554f2f",
+      "name": "Generate email",
+      "credentials": {
+        "openAiApi": {
+          "id": "LuuJapHO7ED0j94T",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "get",
+        "itemId": "={{ $json.body.event.pulseId }}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        448,
+        224
+      ],
+      "id": "d46521d0-39ed-4fce-b645-93d61389396d",
+      "name": "Get email ID",
+      "credentials": {
+        "mondayComApi": {
+          "id": "Tblxq2vCmQvC7WWQ",
+          "name": "Monday.com account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "changeColumnValue",
+        "boardId": "9791001940",
+        "itemId": "={{ $('Edit Fields').item.json.body.event.pulseId }}",
+        "columnId": "color_mktq97jf",
+        "value": "={\"label\": \"Email 1\"}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        224
+      ],
+      "id": "80231f29-222f-4ec7-a0a8-b3343f426c38",
+      "name": "update status",
+      "credentials": {
+        "mondayComApi": {
+          "id": "Tblxq2vCmQvC7WWQ",
+          "name": "Monday.com account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cd02a59e-4c90-49c1-8a54-37a60401a1cd",
+              "name": "text",
+              "value": "={{ $('Gmail Trigger').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        448
+      ],
+      "id": "8c84dcaf-faf8-49e2-8d3f-067e28d398b3",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "changeColumnValue",
+        "boardId": "9791001940",
+        "itemId": "={{ $('Get Item ID by email address').item.json.id }}",
+        "columnId": "color_mktq97jf",
+        "value": "={\"label\": \"Email Response\"}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        912,
+        656
+      ],
+      "id": "e852f34f-f166-4858-9889-201548eb074f",
+      "name": "Update status",
+      "credentials": {
+        "mondayComApi": {
+          "id": "Tblxq2vCmQvC7WWQ",
+          "name": "Monday.com account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get email ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Get Item ID by email address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Item ID by email address": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "approve email": {
+      "main": [
+        [
+          {
+            "node": "Send out email to prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate email": {
+      "main": [
+        [
+          {
+            "node": "approve email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get email ID": {
+      "main": [
+        [
+          {
+            "node": "Generate email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send out email to prospect": {
+      "main": [
+        [
+          {
+            "node": "update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Update email content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "521c0366-0fdb-480b-a701-19d921f21ebe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3942372c35074bf3dbf43dab2a9fdaa4728a40b8c152edc062edd507c7c44031"
+  },
+  "id": "ANL8HofEDNmmYHC8",
+  "tags": []
+}
