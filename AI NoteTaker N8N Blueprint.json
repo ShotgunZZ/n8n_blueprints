@@ -1,0 +1,251 @@
+{
+  "name": "AI NoteTaker N8N Blueprint",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "13399e5a-9d1e-42da-bbb3-d54107eef4e7",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        -32
+      ],
+      "id": "c32d5748-e873-4a4f-b954-6b8a470905e3",
+      "name": "Webhook",
+      "webhookId": "13399e5a-9d1e-42da-bbb3-d54107eef4e7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the text and remove markdown code blocks\nlet text = $json.content[0].text;\ntext = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Parse the cleaned JSON\nconst data = JSON.parse(text);\n\n// Return as a SINGLE item with all 4 fields\nreturn { json: data };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -32
+      ],
+      "id": "46d94d1c-271c-45a2-b706-0842afaf1431",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "content": "## Voice Memo to Notion and Google Sheet\n",
+        "height": 512,
+        "width": 1760
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        64,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "ae99e64d-fecc-49fe-89e7-371213694c6b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-20250514"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a meeting intelligence agent. Analyze the transcript and output a SINGLE JSON object with 5 sections.\n\nOutput EXACTLY this structure:\n{\n  \"meeting_type\": \"Personal\" OR \"Think Technologies\",\n  \n  \"meeting_overview\": {\n    \"summary\": \"2-3 sentence high-level summary of the meeting\"\n  },\n  \n  \"discussion_topics\": \"• Topic Name: one sentence summary\\n• Topic Name: one sentence summary\\n• Topic Name: one sentence summary\",\n  \n  \"action_items\": \"• Person Name: task 1, task 2, task 3\\n• Person Name: task 1, task 2\",\n  \n  \"dates_and_deadlines\": \"• Date/Timeframe: brief description\\n• Date/Timeframe: brief description\"\n}\n\nRules:\n- Extract ONLY from the transcript\n- For meeting_type: Output EXACTLY \"Think Technologies\" ONLY if the words \"Think Technologies\" appear anywhere in the transcript (including at the beginning or end). Otherwise, output \"Personal\" for ALL other meetings, including business calls that don't mention Think Technologies.\n- Pay attention when transcript mentions names and try your best to guess the names of speakers, but don't make things up\n- For discussion_topics: Format as bullet points with topic name followed by colon and summary, separated by \\n\n- For action_items: Format as bullet points with person name followed by colon and comma-separated tasks, separated by \\n \n- For dates_and_deadlines: Format as bullet points with date followed by colon and description, separated by \\n\n- Use empty string \"\" if no content for a section\n- Output ONLY valid JSON - nothing else\n- MUST include all 5 sections even if empty\n\nHere is the transcript: {{ $json.body.transcript }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -32
+      ],
+      "id": "5494f091-f201-4985-be34-ae8ae75e1e91",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "o6HOYr63dKyEuatl",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1APUvrtjEee6AZLhDFd7Y_KSDtAGMXmNMok5ZmGAxRWk",
+          "mode": "list",
+          "cachedResultName": "AI notetakers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1APUvrtjEee6AZLhDFd7Y_KSDtAGMXmNMok5ZmGAxRWk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1APUvrtjEee6AZLhDFd7Y_KSDtAGMXmNMok5ZmGAxRWk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Meeting": "={{ $json.meeting_type }}",
+            "Summary": "={{ $json.meeting_overview.summary }}",
+            "Talking points": "={{ $json.discussion_topics }}",
+            "Action items": "={{ $json.action_items }}",
+            "Timelines": "={{ $json.dates_and_deadlines }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Meeting",
+              "displayName": "Meeting",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action items",
+              "displayName": "Action items",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Talking points",
+              "displayName": "Talking points",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timelines",
+              "displayName": "Timelines",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        992,
+        -32
+      ],
+      "id": "f0688c08-e674-4bce-b7fd-9f553d984666",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lS7ovggnt34uxICh",
+          "name": "zealotrobert gmail"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv1000837.hstgr.cloud",
+            "user-agent": "BackgroundShortcutRunner/4033.0.3.5 CFNetwork/3860.100.1 Darwin/25.0.0",
+            "content-length": "17130",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "priority": "u=3",
+            "x-forwarded-for": "216.176.21.98",
+            "x-forwarded-host": "n8n.srv1000837.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "25e6472824fb",
+            "x-real-ip": "216.176.21.98"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "transcript": "Court? No. Um, yeah, Carl's Carl's great. So Atomic is great. Can you just repeat the name and just mention it? Carl Erickson, atomic object. So they do software. They do custom software development. So they don't productize. They probably one more, but they're 40 years old. No, like 25. But they do $40000000 in revenue. Wow. Yeah. So it just it's still just provide services. That's cool. Yeah. Yeah. There yeah, that's a kickbox. That's 100%. 40 million is not bad. No, it's not bad at all. No, no. Yeah, no, that's exciting. It's all services, so you could do some math, like, yeah. yeah, no. It's like that. Um, that's cool. What are you, what are you, what are you? I mean, what I mean, I want to know, like, what is your kind of thought behind? still trying to do like listening to other people's stories and what are you trying to get out of this? for you, like for yourself. Yeah. So, I mean, for me, it was like Coming back to Michigan, it was the park. I want to get back to the Midwest. That was a big thing. Nice. Okay. I think I wore out my new even thing. What do you have there? Come on. Like, seriously, okay, yeah. I was there for 5 years. I said pizza? I mean what else? I mean, I, they kept giving me opportunity left and right, and that's why I got like, I just kept, I grew a ton. I learned so much. Like I learned a ton. They gave me just like so many opportunities. That's what got me there. You're just in sicity, right? Are you? Yeah, just essentially. You ventures. We like report it into Adventures. So like we interact with them. So, like, yeah, so like, but I started out as like, oh, we'll do experimental programming. By like year 2, I like own the entire entrepreneurship portfolio. See? So, and then like, then it's like, okay, we need to redesign everything. Because I didn't realize I thought I knew it was early, but I didn't realize, oh, this is like startup face. Um, so, like, it was real. I mean, it was rebuilding everything in 2020. Um, So that was a ton of fun and now it's like, of course, you can butt, but like, that's what kind of kept me there. Now they're going to a different stage and that's going to be a different ballgame that was like, where do they want to take, where Yama just wants them to take it? I wasn't like thrilled about. Got it. Um, So that was that was partly even a main reason I was like, I need like East Coast, like, or New Hammond specifically is where me out. Um, So, and then I always wanted Bamboo and Grand Rapids. That was like a big thing when I was, because I was in Grand Rapids for 4 years before I went to. And I was like, there's no place. There's no hub like Detroit bamboo is the hub. Right. Detroit, like I just saw it. Right. Um, So Amanda was like, you were building in Grand Napos where he just bought this building. I was like, cool, let's see. Okay, you know that building, like, all that stuff. So I wasn't even thinking about this originally. But then, like, I was talking to Morris Kaiser, a few other people, and they're like, man, like, it's a good fit. It's also like what you're trying to build coincides really nice of a bamboo is doing because a lot of the companies that I feature would be good fits for bamboo too. And they even like help with it up, like they just target market alignment a lot better. I see. And then Amanda's like, I do not care. If the 2 are interwoven, I do not care. So like that was like cause you know, I always had to keep super separated. There was no like, hey, check out my thing. And I was like, there was none of that. I couldn't do that. I had a common adventure agreement there. Here, like, I don't have that. Yeah. I'm adjusting that difference, but I think that's helpful too. That's great so and then like leaving, it's a different level. It's a different stage like bamboo is like a. It's the Grand Napa is one's gonna be a bigger stage. I hope whatever it was. Yeah, so, yeah, yeah. Um, so that's, that's really good for you.. Yeah, really. I think it's a best of everything. I think everyone's winning on this one. Nice. Yeah, I mean, um, yeah, love it. I mean, I would, so like, on one side, I'm still trying to like build up or, yeah, agency business, but on the other side, I want to, I also want to like, help with the community too, like, yeah, the whole ecosystem I. Been here a year and a half, I think, it's been, it's feels like a 2nd home already. Yeah, it's got so many people and then, you know, I'm helping I'm helping as much as I can. Yeah, seriously. Um, So, I, besides the I collective, also run a, I'm not sure what I heard about, so. Have you heard of A2 New Tech? So, you know, there's a there's another party called DD new tech. I don't know, so 18 new Tech is in Arbor New Tech. Okay. Because they're kind of backed by bamboo. Right. Um, there's Denotex Detroit New Tech. Yeah. I'm actually also want to co-host for that too. So, okay. But, you know, we also host like a monthly gathering for people to like pitch their business ideas. Yeah. And then you just get like, there's no investment investment involved yet. Yeah, but we're getting like our community feedback for people. And that's really just all we do now and then just get people together to network. But obviously, Detroit is less of a tech tech place than an Albert. But, you know, I'm trying. I'm like, yeah, I've been doing with another gentleman called Josh, Josh Harris, but that's, yeah, that's what we do. If there's anything that you can think of, you know, community perspective, you need to help with and why that you want to control. up here. Yeah. Yeah, I'm trying to I gotta figure out where the holes ingrade happens. Like, if they just gotta, like, I gotta do my listening to her quickly in some ways. Like, I, yeah, it would have been 6 months where I just, like, listen, take my time. Here, I can't do that. So I'm not listening to her, but I'm like, speeding through it. At least I'm gonna try to. Um, So next few weeks I'm just gonna like listen and not try to play anything. You're going to events. Go to events, like whoever wants a coffee meeting, is going to get a coffee meeting, there will be no nose. And if whoever's got feedback, just send it. Um, so, and then I'll, I have theories, but like, I want to test them a little bit. Got it. So what I don't want to do is like build a whole programming calendar and then find out what was wrong. Sure. Or like find out what was wrong like within the 1st event. Okay. Um, so, like, I have, I think I know, like, I have a decent just, I think, already based on a recent feedback, but we're getting there. And in the meantime, because I actually, I think technology, we met Amanda as because she mentioned about meeting some services in terms of Now I can't recall, because that was probably a couple weeks back and then we were talking about how can you, can, how can then move better leverage on opening ice services? Um, and if you have, I believe in your mind, you have some kind of workflow procedures for the grand rapids place, which can be, you know, kind of replicated for the whole bend of ecosystem too, I believe. Um, you know, we're here too. that. Yeah, I think there's like... Basically when it was like here in the bedroom, you talk, I think there's a lot of workflow stuff we got right there. Okay. Um, I want to figure I'm trying to get adjusted, like, where the software tool, like, wants, like, like, this I yell to, where, like, we're all on Google seats, and that's it. And I was like, guys, this isn't working. And then I rebuilt all the systems there. Really? When you're there, they're on Google Sheets, everything is on Google Sheets. Everything is good. Dude, I'm like, sometimes when I heard those, I was like, But now I, it doesn't surprise me anymore. Yeah, when I walked in, they asked me, like, I was like, wait 2 for me, yo. They were like, hey man, we want you to send a whole week taking whatever's in the Google sheet. and turn them into really nice paper applications. I remember being like, no, I'm not spending a whole week doing that. It wasted everyone's time. So I like learned AirTable overnight. And then built the whole system and airtable, and I was like, look, I automated it, and we could do applications like that. And then that just like. You should charge. Well, then, yeah, now AirTable AirTable in a case study on us. yelling up, signing a Enterprise country at your table. So, like, it just snowballed. And then you're saying, oh, Ventures, using your table now. You're seeing Everett across Cape Music, which is cool. To me, that's a huge one. Yeah. No, it is. yeah. So, then we can move, like, we move so fast, you know, because of that, or, we're moving faster. I felt like cause of airtable stuff. So I think there's like a, there's a lot to do that here. I think just like, no, like my understanding is I don't think anyone's like, No one's super interested in systems on a team currently. DVD. I'm still a week and a half . Yeah. But that's my, like, quick. No, no, absolutely no pressure. I know you're a weakest out fan. Yeah, and you're going to a primary prince next week. Yeah, I'll be there Monday. So, Oh, it's funny. Yeah. So should we, I'm, I think I'm, yeah, I'm getting there pretty quick, I feel like. Because now I know what I'm looking for. When I was like, yeah, I was like, what is all this? Yeah. And you have to like probably cross a few layers to like get to that. Yeah, I didn't even know what I was looking at half the time. That 1st year, looking back, I was like, I don't even know what I was looking at. Now I'm like, no, I can understand the systems. I understand the people side. Like, I'm already feeling like where I threw at you. I was like, come back here. Yeah. It's awesome. Yeah. Yeah, what do you, is there anything from Yale? that you think I can still tap into? Yeah. Accelerate, yeah. accelerate radio. Yeah, it's do they still support like alumni? Acceler? Yes, just purely alum night. Really? Celery Yale. Yeah, just like... Yeah, they're doing mostly in New York. Uh, stuff, but they're, honestly, on news, they're doing a lot of virtual stuff too. Okay. Are they, there's no like location? No, most, it's like, Jonathan, do you know what I mean? like Jonathan Goldberg? He might have been... Yeah, Jonathan's leading it. Oh, okay. He's, like, really welcome. really connected to that space. Okay. And then I think they just raised the phone too. I think maybe. They were talking about it. And then, but what do what do those virtual sessions do? Like is it training? Did you like panels? They were doing workshops. They have pretty good attendance. There's a lot of interesting, I love Nice Side, but Bill just hasn't. They can't, well, they don't want to touch it because they, or like they're nervous to touch it because there's like, then it might affect their nonprofit status. Don't they love my side? So, like, that's why Yale hasn't touched it. So I think, though, there's a lot of interest around it, and I think there's the right people around it. I think that, yeah, like just let it go. They'll let, like, whoever wants to take it will still happen. So, Yeah, there's momentum. But yeah, it's like, I think it's still pretty well connected over there. Okay, yeah. Uh, Career Services is still open too. I know how well they are, but I've heard mixed things. I go connected with one guy and then he's like, 0 my god. And then there's a, they build an AI bot, though, for you to, to matchmaking you, to matchmake you, and then set you up to a call. But then, yeah, like, I never joined, but anyway, that's it. that's kind of... Interesting. They built, yeah, they built an AI bottom, which is, which is, which is pretty cool. Yeah, I know. So I think it's gonna play with AI a little bit, too. It's gonna take you a minute, but yeah. Fascinating. Because they're gonna do, they got all the hires coming up, so... Okay, it's kind of okay. And then there's a Yale club here in the number. Yes. Yeah. No, no, you have club in Grand Rapids. What do they, like, what do these people do? Like, what do you do? There's a lot of, um, do you remember me, Francis Pollock? She's a founder of Mendo Oil Collective, MOC. France is a PhD music student. Um, she's still over there. But she, yeah, the Yale, like alumni group in Grand Rapids invited her to come out. And I was like, of all the groups invite Grand Rapids, the one that picked you. And she's like, yeah, there's a big art scene. And I was like, 0 my goodness. Um, so, yeah, so like, there isn't there a Yelk crew around. Yeah. So, yeah, I think, yeah, yeah. I mean, if you still have contact with those, like, you said there's some college crime that came back to Michigan? Yeah, I would like, is there any grad student? I think they're part of it.'d have to look on like that. Uh, I know Gianti Gupta is the ones I come back. She young college. But I think she's coming back to Michigan. like in May, I think. Well, she should be sharp. And then What else? I have to look. It's okay. It's okay. Yeah. Name one name will be. Yeah, good start with. I do know there's the Michigan University of Michigan is really close to Francis. Okay. They worked, they worked a few times together. Friends, Pollock, with MRC. Okay, yeah. So I'm guessing there's a collaboration there happened. Okay. There's some there's some that name. There's a few connections. I want to show you this later, but okay, you're good. I'm trying to think of this. Yeah. Okay. There's people around. You just kind of, like, look a little bit. Yeah, yeah. I mean, I feel like it's probably easier, like, since you know them and they're like, ah, I'm mad. yeah, yeah. But, um, yeah, I mean, it's good to have you back and yeah, this is exciting. Yeah. I don't know. I feel like the Midwest, too many people, even Americans, they don't they don't like if you have never come to the Midwest, you don't know. You just don't know. Correct. They're like, like, Detroit is what? I used to tell us, I said it to you. like, do you? I was like, McIntosh Island, Holland, Michigan, like one of the best beaches in the world. Yes. Like, yeah. It's super affordable. Like, they're like, what? What? Yeah, like what? Have you shown them like photos all the time? They're like, get out of here. I was like, yeah, yeah. And like the fall, the yeah, the fall's great. Yeah, it's falling. Ranger Falls team, his 1st teams in Detroit. And like, yeah. I mean, it's crazy. Like people, I don't know, like even like I was traveling in Chicago last week, I was talking to people, uh, and I met, and then none of them have ever been to Detroit. I've never even stuck foot in Michigan. Yeah. Yeah, I'm curious because Bamboo Granada is kind of built for conferences in some ways. Because, like, big event spaces, we have a hotel across the street and there's restaurants all around us. Like, in terms of venue management, like beautiful. So I'm like wondering do more conferences like come to us. Like, can we host? Cool. So that's when I cross my fingers out. So I have to feel the word built for it. So, that's cool. At least I'm going to try to recruit with you a couple. So, we'll see. Awesome. Yeah. I mean. Yeah, we'll we'll try to scale up the AI Collective is also pretty big, and then all this get like good speakers and all this. Yeah, I'm trying to, yeah, I got to think through. We're definitely, I'm trying to make it really bust, like, buzzing, granapids. That's my whole point. Well, again, anything? You need help with? Can you know? Yeah. Yeah, I'd be off with you too. let me know. Thank you. Yeah. I will, I think I will sooner or later. you know. And it's also exciting for me. Um, with this team to see how far we can go. No, I think I feel like it's easier to build community here than I was on the east coast. Right? Yeah, people are nicer. People are nicer than us transactional. Yeah. And then, and then, like, I feel like, The 1st time, because I'm new here too, right? The 1st time, the 1st event I ever went to is the new Tech event. That's the 1st event. I went in as a As audience. Yeah. And everybody's nice. Like, everybody greet you and really want to know you, right? And I was like, okay, how can I be, how can I be, how can I participate? And then people are telling me, okay, so like, you know, in our world, if you if people like you, if you get in well, if you really like, you know, be be genuine, then people will embrace it. Yeah, okay. Back then I obviously I didn't know what I'm expecting, but now I can definitely tell. Yeah, yeah. totally. I mean, all friends and it's great. Yeah. I don't know. I mean, I mean, Yo has a lot of smart people. No question about that. A lot of very sharp, super smart kid. I met I met those people. But yeah, as you mentioned, I think a little bit transactional. There's a lot of that. And they just, they just, they just want what they want. Nothing else. But a lot more egos, maybe I yell too. Well, it's great talking to you, man. Yeah. Basically, what I what I wanna show this is like, this is...",
+            "date": "Oct 29, 2025 at 6:15 PM"
+          },
+          "webhookUrl": "https://n8n.srv1000837.hstgr.cloud/webhook/952c7772-0ae4-499f-94af-94683d6be5ea",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "8e90b735-7dc5-4b06-a80b-1afd6ec4a49a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3942372c35074bf3dbf43dab2a9fdaa4728a40b8c152edc062edd507c7c44031"
+  },
+  "id": "ULOwEMPJRKZwhBlT",
+  "tags": []
+}
